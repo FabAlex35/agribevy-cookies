@@ -48,15 +48,34 @@ export async function generateStaticParams() {
 export async function GET(req) {
     try {
         const auth = await verifyToken(req); // Verify the user token
-        const pathSegments = new URL(req.url).pathname.split('/').filter(Boolean);
 
-        // Extract dynamic parts from the URL
-        const mobile = pathSegments[pathSegments.length - 3]; // The buyer's mobile number
-        const start = pathSegments[pathSegments.length - 2]; // Start date
-        const end = pathSegments[pathSegments.length - 1]; // End date
+        if (!auth || !auth.decoded) {
+            return NextResponse.json({
+                message: 'Invalid or missing token',
+                status: 401
+            }, { status: 401 });
+        }
 
         const { decoded } = auth;
         let userMobile = decoded.mobile;
+
+        const pathSegments = new URL(req.url).pathname.split('/').filter(Boolean);
+
+        if (pathSegments.length < 3) {
+            return NextResponse.json({
+                message: 'Invalid URL structure',
+                status: 400
+            }, { status: 400 });
+        }
+
+        const [mobile, start, end] = pathSegments.slice(-3); 
+
+        if (!mobile || !start || !end) {
+            return NextResponse.json({
+                message: 'Missing required parameters',
+                status: 400
+            }, { status: 400 });
+        }
 
         // Check user's role
         if (decoded.role === 'marketer' || decoded.role === 'assistant') {
@@ -66,7 +85,7 @@ export async function GET(req) {
                     values: [decoded.userId]
                 });
 
-                if (!num) {
+                if (!num || !num?.created_by) {
                     return NextResponse.json({
                         message: 'User not found',
                         status: 404
