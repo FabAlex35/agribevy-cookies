@@ -41,6 +41,9 @@ export async function middleware(req) {
         return response;
     }
 
+    console.log(!accessToken && !refreshToken);
+    
+
     if (!accessToken && !refreshToken) {
         return url.pathname.startsWith("/portal") ? NextResponse.redirect(new URL("/", req.url)) : response;
     }
