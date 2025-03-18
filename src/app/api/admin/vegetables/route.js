@@ -9,10 +9,7 @@ export async function GET(req) {  // for farmers
         const auth = await verifyToken(req)
  
         const { decoded } = auth
-        const role = decoded.role
-
-        console.log(decoded);
-        
+        const role = decoded.role        
  
         if (role == 'marketer'||role=="assistant") {
             const rows = await querys({

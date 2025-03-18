@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import cookie from "cookie"; // ✅ Correct way to handle cookies in Middleware
-import { generateRefreshToken, generateToken } from "./app/lib/Token";
+import cookie from "cookie";
 
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET_KEY);
 const REFRESH_SECRET_KEY = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET_KEY);
-const validUpto = process.env.JWT_EXPIRATION;
-const refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRATION;
-const currentTime = Math.floor(Date.now() / 1000);
 
 // Utility function to verify JWT
 async function verifyToken(token, secretKey) {
@@ -20,9 +16,10 @@ async function verifyToken(token, secretKey) {
 
 export async function middleware(req) {
     const url = req.nextUrl.clone();
-    const cookies = cookie.parse(req.headers.get("cookie") || ""); // ✅ FIXED cookie handling
+    const cookies = cookie.parse(req.headers.get("cookie") || "");
     const accessToken = cookies.accessToken || null;
     const refreshToken = cookies.refreshToken || null;
+    const currentTime = Math.floor(Date.now() / 1000);
 
     // CORS Headers
     const response = NextResponse.next();
@@ -39,10 +36,8 @@ export async function middleware(req) {
 
     if (!requiresAuth) {
         return response;
-    }
-
-    console.log(!accessToken && !refreshToken);
-    
+    }    
+console.log(!accessToken && !refreshToken, url.pathname);
 
     if (!accessToken && !refreshToken) {
         return url.pathname.startsWith("/portal") ? NextResponse.redirect(new URL("/", req.url)) : response;
@@ -50,37 +45,60 @@ export async function middleware(req) {
 
     let decodedAccess = accessToken ? await verifyToken(accessToken, SECRET_KEY) : null;
     let decodedRefresh = refreshToken ? await verifyToken(refreshToken, REFRESH_SECRET_KEY) : null;
+    console.log(decodedAccess,decodedRefresh,currentTime,"****************", url.pathname);
 
-    if (!decodedAccess && decodedRefresh?.exp > currentTime) {
-        const newAccessToken = await generateToken(decodedRefresh, 0, SECRET_KEY, validUpto);
-        const redirectResponse = NextResponse.redirect(new URL("/portal/dashboard", req.url));
-        redirectResponse.headers.append("Set-Cookie", cookie.serialize("accessToken", newAccessToken, {
-            httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict", maxAge: 24 * 60 * 60, path: "/",
-        }));
-        return redirectResponse;
+    console.log(!decodedAccess && !decodedRefresh, url.pathname);
+    if(!decodedAccess && !decodedRefresh){
+         if(url.pathname.startsWith("/portal")){
+            // return NextResponse.redirect(new URL("/", req.url));
+             const response = NextResponse.redirect(new URL("/", req.url))
+            
+                    // Append Set-Cookie header to clear the 'accessToken' cookie
+                    response.headers.append('Set-Cookie', cookie.serialize('accessToken', '', {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'Strict',
+                        expires: new Date(0),
+                        maxAge: 0 * 60,
+                        path: '/'
+                    }));
+            
+                    response.headers.append('Set-Cookie', cookie.serialize('refreshToken', '', {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'Strict',
+                        expires: new Date(0),
+                        maxAge: 0 * 60,
+                        path: '/'
+                    }));
+            
+                    response.headers.append('Set-Cookie', cookie.serialize('role', '', {
+                        httpOnly: false,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'Strict',
+                        expires: new Date(0),
+                        maxAge: 0 * 60,
+                        path: '/'
+                    }));
+            
+                    // Return the response
+                    return response;
+         }
+    }
+    if(decodedAccess && decodedAccess.exp < currentTime || decodedRefresh && decodedRefresh.exp < currentTime){
+        return url.pathname == ("/") ? NextResponse.redirect(new URL("/portal/dashboard", req.url)) : response;
     }
 
-    if (decodedAccess?.exp > currentTime && !decodedRefresh) {
-        const newRefreshToken = await generateRefreshToken(decodedAccess, REFRESH_SECRET_KEY, refreshTokenExpiry);
-        const redirectResponse = NextResponse.redirect(new URL("/portal/dashboard", req.url));
-        redirectResponse.headers.append("Set-Cookie", cookie.serialize("refreshToken", newRefreshToken, {
-            httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict", maxAge: 24 * 60 * 60, path: "/",
-        }));
-        return redirectResponse;
-    }
-
-    if (decodedAccess && decodedRefresh && url.pathname === "/") {
-        return NextResponse.redirect(new URL("/portal/dashboard", req.url));
-    }
-
-    if (!decodedAccess && !decodedRefresh) {
-        const redirectResponse = NextResponse.redirect(new URL("/", req.url));
-        ["accessToken", "refreshToken", "role"].forEach((name) => {
-            redirectResponse.headers.append("Set-Cookie", cookie.serialize(name, "", {
-                httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict", maxAge: 0, path: "/",
-            }));
-        });
-        return redirectResponse;
+    if(!decodedAccess){
+        if(!decodedRefresh){
+            if (req.method != "GET" && url.pathname.startsWith("/api") && url.pathname != "/api/auth/logout") {
+                return NextResponse.json({ message: "Session Expired" }, { status: 401 });
+            }
+        }else{
+            if (req.method != "GET" && url.pathname != "/api/auth/refresh") {
+                return NextResponse.json({ message: "Refersh" }, { status: 401 });
+            }
+        }
     }
 
     return response;
@@ -88,5 +106,5 @@ export async function middleware(req) {
 
 // Apply middleware to API routes and portal pages
 export const config = {
-    matcher: ["/api/:path*", "/portal/:path*"],
+    matcher: ["/api/:path*", "/portal/:path*", "/"],
 };
