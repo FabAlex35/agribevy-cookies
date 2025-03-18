@@ -50,7 +50,7 @@ const SideNav = ({ isOpen, role, access, translations, app_language }) => {
                 return
             }
             else if(response?.status === 404) {
-                setFlag(false)
+                // setFlag(false)
                 router.push("/portal/settings")
                 return
             }

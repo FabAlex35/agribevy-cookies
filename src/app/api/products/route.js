@@ -148,7 +148,7 @@ export async function POST(req) {
 
                 // Create new filename with a timestamp
                 const newName = `${basename}-${Date.now().toString()}${extname}`;
-                const uploadDirectory = 'C:\\images';
+                const uploadDirectory = 'uploads/';
                 storePath = path.join(uploadDirectory, newName);
 
                 // Write the file to the new location

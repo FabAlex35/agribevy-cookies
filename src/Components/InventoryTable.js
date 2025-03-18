@@ -211,48 +211,6 @@ const AddInventoryTable = ({ searchProduct, searchFarmer, viewInventory, languag
         return newErrors.every((err) => Object.keys(err).length === 0);
     };
 
-    // const handleSubmit = () => {
-    //     if (!validateRows()) {
-    //         return;
-    //     }
-    //     // const processedRows = rows.map((row) => ({
-    //     //     name: row.name || "",
-    //     //     veg_id: row.veg_id || null,
-    //     //     farmer: row.farmer || "",
-    //     //     mobile: row.mobile || null,
-    //     //     quantity: row.quantity || 0,
-    //     //     unit: row.unit || "",
-    //     //     price: row.price || 0,
-    //     //     farmer_wage: row.farmer_wage || 0,
-    //     //     farmer_rent: row.farmer_rent || 0,
-    //     //     sack_count:row.sack_count ||0,
-    //     //     sack_price:row.sack_price ||0
-    //     // }));
-
-    //     const processedRows = rows.flatMap((row) => {
-    //         const quantities = row.quantity ? row.quantity.split('+').map((q) => q.trim()) : [0];
-
-
-    //         return quantities.map((quantity) => ({
-    //             name: row.name || "",
-    //             veg_id: row.veg_id || null,
-    //             farmer: row.farmer || "",
-    //             mobile: row.mobile || null,
-    //             quantity: parseFloat(quantity) || 0,
-    //             unit: row.unit || "",
-    //             price: row.price || 0,
-    //             farmer_wage: row.farmer_wage || 0,
-    //             farmer_rent: row.farmer_rent || 0,
-    //             sack_count: row.sack_count || 0,
-    //             sack_price: row.sack_price || 0
-    //         }));
-    //     });
-
-    //     console.log("Submitted Data:", processedRows);
-    // };
-
-
-
 
     const handleRemoveRow = (index) => {
         if (rows.length > 1) {  // Avoid removing the last row
@@ -267,46 +225,6 @@ const AddInventoryTable = ({ searchProduct, searchFarmer, viewInventory, languag
             setErrors(updatedErrors);
         }
     };
-
-    // const handleSubmit = async () => {
-    //     if (!validateRows()) {
-    //         return;
-    //     }
-    //     const formData = new FormData();
-    //     rows.forEach((row, index) => {
-    //         formData.append(`products[${index}][name]`, row.name || "");
-    //         formData.append(`products[${index}][veg_id]`, row.veg_id || null);
-    //         formData.append(`products[${index}][farmer]`, row.farmer || "");
-    //         formData.append(`products[${index}][mobile]`, row.mobile || null);
-    //         formData.append(`products[${index}][quantity]`, row.quantity || 0);
-    //         formData.append(`products[${index}][unit]`, row.unit || "");
-    //         formData.append(`products[${index}][price]`, row.price || 0);
-    //         formData.append(`products[${index}][farmer_wage]`, row.farmer_wage || 0);
-    //         formData.append(`products[${index}][farmer_rent]`, row.farmer_rent || 0);
-    //         formData.append(`products[${index}][sack_count]`, row.sack_count || 0);
-    //         if (row.image) {
-    //             const imageName = `image_${Date.now()}_${index}.jpg`;
-    //             formData.append(`products[${index}][file]`, row.image, imageName);
-    //         }
-    //     });
-    //     setSpin(true)
-    //     const response = await addProductAPI(formData)
-    //     if (response?.status === 200) {
-    //         setSuccessMsg(response?.message)
-    //         setSpin(false)
-    //         setTimeout(() => {
-    //             setSuccessMsg(null)
-    //             viewInventory()
-    //         }, 2000)
-    //     }
-    //     else {
-    //         setErrMsg(response?.message)
-    //         setSpin(false)
-    //         setTimeout(() => {
-    //             setErrMsg(null)
-    //         }, 2000)
-    //     }
-    // };
 
     const handleSubmit = async () => {
         if (!validateRows()) {

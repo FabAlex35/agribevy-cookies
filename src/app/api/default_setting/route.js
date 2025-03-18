@@ -43,18 +43,6 @@ export async function POST(req) {
             }, { status: 400 });
         }
 
-        // const bytes = await logo.arrayBuffer()
-        // const buffer = Buffer.from(bytes)
-
-        // const extname = path.extname(logo.name);
-
-        // const basename = path.basename(logo.name, extname);
-
-        // const newName = `${basename}-${Date.now().toString()}${extname}`;
-        // const uploadPath = path.join('public/uploads/logo', newName);
-        // const storePath = path.join('uploads/logo', newName);
-
-        // await writeFile(uploadPath, buffer)
 
         const bytes = await logo.arrayBuffer();
         const buffer = Buffer.from(bytes);
@@ -66,7 +54,7 @@ export async function POST(req) {
         const newName = `${basename}-${Date.now().toString()}${extname}`;
 
         // Specify the directory on the local PC
-        const uploadDirectory = 'C:\\images'; // Change to your desired location
+        const uploadDirectory = 'uploads/logo'; // Change to your desired location
 
         // Create the full path for storing the file
         const storePath = path.join(uploadDirectory, newName);
