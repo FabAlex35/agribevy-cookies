@@ -97,6 +97,8 @@ console.log(!accessToken && !refreshToken, url.pathname);
         }else{
             if (req.method != "GET" && url.pathname != "/api/auth/refresh") {
                 return NextResponse.json({ message: "Refersh" }, { status: 401 });
+            }else if(url.pathname == "/"){
+                return NextResponse.redirect(new URL("/portal/dashboard", req.url))
             }
         }
     }
