@@ -28,7 +28,7 @@ const MultiInvoice = ({ data, getInvoice, language }) => {
     const [error, setError] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const path = data?.detail.logo.split('\\')
-    const imgPath = `http://localhost:3000/api/images/${path[path.length - 1]}`
+    const imgPath = `${baseUrl}/${data?.detail.logo}`
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     const [transactionType, setTransactionType] = useState("fullpayment")
 
@@ -203,7 +203,6 @@ const MultiInvoice = ({ data, getInvoice, language }) => {
             </div>
             <div className="invoice-container bg-white p-4 border border-dark mt-3" id="invoice">
                 <div className="text-center mb-4">
-                    {/* <img width={100} height={50} src={`${baseUrl}/${data?.detail?.logo}`} /> */}
                     <img width={100} height={50} src={imgPath} />
                     <h1 className="display-6 fw-bold">{data?.detail?.user_name}</h1>
                     <p className="mb-0">{data?.detail?.user_address}</p>

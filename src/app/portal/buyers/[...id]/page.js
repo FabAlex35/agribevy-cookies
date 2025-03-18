@@ -413,22 +413,9 @@ const BuyerDetails = ({ params }) => {
                                                                         <span className="d-flex pay-date justify-content-between small text-muted">
                                                                             <p>{formatDate(transaction?.soldDate)}</p>
                                                                         </span>
-                                                                        {/* <div className="invoice-overlay d-flex justify-content-center align-items-center pointer" onClick={() => showModal(transaction)}>
-                                                                            <span className="text-white fw-bold">Click to view invoice</span>
-                                                                        </div> */}
-
-
+                                                                
                                                                         <div className="d-flex gap-3 flex-column flex-md-row">
-                                                                            {/* <img
-                                                                                src={`${baseUrl}/${transaction?.image}`}
-                                                                                alt={transaction?.veg_name}
-                                                                                className="img-fluid w-25 h-25 rounded object-cover"
-                                                                            /> */}
-                                                                            {/* <img
-                                                                                src={ImageURL}
-                                                                                alt={transaction?.veg_name}
-                                                                                className="img-fluid  uniform-image  rounded object-cover mb-3 mb-md-0"
-                                                                            /> */}
+                                                                            
                                                                             <div>
                                                                                 <h3 className="fw-bold h6 ">{language === "tamil" ? transaction?.tamil_name : transaction?.veg_name}</h3>
                                                                                 <p className="text-muted mb-1 quantity"> {transaction?.quantity} kg</p>

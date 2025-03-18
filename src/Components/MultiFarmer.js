@@ -29,8 +29,8 @@ const MultiFarmer = ({ data }) => {
     const [advanceRupee, setAdvanceRupee] = useState(null)
     const [error, setError] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const path = data?.detail.logo.split('\\')
-    const imgPath = `http://localhost:3000/api/images/${path[path.length - 1]}`
+    // const path = data?.detail.logo.split('\\')
+    const imgPath = `${baseUrl}/${data?.detail.logo}`
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
 
@@ -132,7 +132,6 @@ const MultiFarmer = ({ data }) => {
             </div>
             <div className="invoice-container bg-white p-4 border border-dark mt-3" id="invoice">
                 <div className="text-center mb-4">
-                    {/* <img width={100} height={50} src={`${baseUrl}/${data?.detail?.logo}`} /> */}
                     <img width={100} height={50} src={imgPath} />
 
                     <h1 className="display-6 fw-bold">{data?.detail?.user_name}</h1>

@@ -1,5 +1,5 @@
 "use client"
-import { editProductInventoryAPI, editSellingInfoAPI, getBuyerAPI, getImageAPI, getSellingInfoAPI } from '@/src/Components/Api';
+import { editProductInventoryAPI, editSellingInfoAPI, getBuyerAPI, getSellingInfoAPI } from '@/src/Components/Api';
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form';
 import { FaRupeeSign } from "react-icons/fa";
@@ -409,9 +409,7 @@ console.log(final);
                                         {inventoryData?.length > 0 ? (
                                             <div className="row">
                                                 {inventoryData?.map((v, i) => {
-                                                    const path = v.image.split('\\');
-                                                    const ImageURL = `http://localhost:3000/api/images/${path[path.length - 1]}`;
-
+                                                    const ImageURL = `${baseUrl}/${v.image}`;
                                                     return (
                                                         <div key={i} className="col-dash">
                                                             <div className="produce-card">
