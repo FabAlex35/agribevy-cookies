@@ -54,16 +54,24 @@ export async function POST(req) {
         const newName = `${basename}-${Date.now().toString()}${extname}`;
 
         // Specify the directory on the local PC
-        const uploadDirectory = 'uploads/logo'; // Change to your desired location
+        const uploadDirectory = path.join(process.cwd(), "public", "uploads", "logo");
+        // const uploadDirectory = 'uploads/logo'; // Change to your desired location
 
         // Create the full path for storing the file
         const storePath = path.join(uploadDirectory, newName);
+
+
+        if (!fs.existsSync(uploadDirectory)) {
+            await mkdir(uploadDirectory, { recursive: true }); // Creates folders if missing
+        }
 
         // Store path (relative or for other purposes)
         // const storePath = path.join('Downloads', newName);
 
         // Write the file to the new location
         await writeFile(storePath, buffer);
+
+        const imagePath = `/uploads/logo/${newName}`;
 
         const { decoded } = auth
         const marketerMobile = decoded.mobile
@@ -74,7 +82,7 @@ export async function POST(req) {
             // Insert new product into database
             const result = await querys({
                 query: `INSERT INTO default_setting (commission, weekoff, magamai, logo, marketer_mobile,financialYear,magamaiSource,salesColumn,language,app_language,magamaiType, bill_type, magamai_show) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                values: [commission, weekoff, magamai, storePath, marketerMobile, year, magamaiSource, initialVisibleColumns, language, app_language, magamaiType, billMode, magamai_show]
+                values: [commission, weekoff, magamai, imagePath, marketerMobile, year, magamaiSource, initialVisibleColumns, language, app_language, magamaiType, billMode, magamai_show]
             });
 
             // Check if insertion was successful
