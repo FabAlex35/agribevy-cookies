@@ -12,7 +12,8 @@ const Slice=createSlice({
         applanguageChanged:false,
         subscription: null,
         data: {},
-        bill: {}
+        bill: {},
+        session: 0
     },
     reducers:{
         changeName:(state,action)=>{
@@ -42,8 +43,11 @@ const Slice=createSlice({
         getBillMode:(state,action)=>{
             state.bill = action.payload
         },
+        getSession:(state,action)=>{
+            state.session = action.payload
+        },
     }
 })
 
-export const {changeName,getUserDetailsSlice,getUserLanguageSlice,changeLanguage,getAppLanguageSlice,changeAppLanguage,getSubscription,getSubscriptionData,getBillMode}= Slice.actions
+export const {changeName,getUserDetailsSlice,getUserLanguageSlice,changeLanguage,getAppLanguageSlice,changeAppLanguage,getSubscription,getSubscriptionData,getBillMode,getSession}= Slice.actions
 export default Slice.reducer
