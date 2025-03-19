@@ -2,7 +2,7 @@ import { querys } from "@/src/app/lib/DbConnection";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/src/app/lib/Token";
-import cloudinary from "../../lib/cloudinary";
+import cloudinary from "@/src/app/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
 
