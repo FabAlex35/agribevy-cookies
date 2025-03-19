@@ -13,7 +13,6 @@ import AccessDenied from '@/src/Components/AccessDenied';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 const Product = ({ params }) => {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     const router = useRouter()
     const app_language = useSelector((state) => state?.user?.app_language)
     const translations = useSelector((state) => state?.language?.translations)
@@ -409,7 +408,7 @@ console.log(final);
                                         {inventoryData?.length > 0 ? (
                                             <div className="row">
                                                 {inventoryData?.map((v, i) => {
-                                                    const ImageURL = `${baseUrl}/${v.image}`;
+                                                    const ImageURL = `${v.image}`;
                                                     return (
                                                         <div key={i} className="col-dash">
                                                             <div className="produce-card">

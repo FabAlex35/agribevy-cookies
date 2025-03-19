@@ -22,7 +22,6 @@ const Settings = () => {
     const app_language = useSelector((state) => state?.user?.app_language)
     const translations = useSelector((state) => state?.language?.translations)
     const sub_status = useSelector((state) => state?.user?.subscription)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     const user = useSelector((state) => state?.user?.userDetails)
     const [loading, setLoading] = useState(false)
     const [successMsg, setSuccessMsg] = useState(null)
@@ -152,7 +151,7 @@ const Settings = () => {
         if (response?.status === 200) {
             setSettingsData(response?.data)
             // const path = response?.data.logo.split('\\')
-            const ImageURL = `${baseUrl}/${response?.data.logo}`
+            const ImageURL = `${response?.data.logo}`
             setImgPath(ImageURL)
             setEdit(false)
             setLoading(false)

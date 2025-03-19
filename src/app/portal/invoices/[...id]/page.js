@@ -24,7 +24,6 @@ const InvoiceDetails = ({ params }) => {
     const [loading, setLoading] = useState(true)
     const [details, setDetails] = useState(null)
     const [noInvoice, setNoInvoice] = useState(false)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     const [spinAdd, setSpinAdd] = useState(false)
     const router = useRouter()
     const [showAlert, setShowAlert] = useState(false)

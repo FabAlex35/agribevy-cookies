@@ -17,11 +17,8 @@ const formatDate = (dateString) => {
 };
 
 const InvoiceBuyer = ({ data, closeModal,language }) => {
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
     const invoiceRef = useRef();
-    const path = data?.logo?.split("\\");
-    const imgPath = `${baseUrl}/${path?.[path.length - 1]}`;
+    const imgPath = `${data?.logo}`;
 
     const downloadInvoiceAsPDF = async () => {
         const element = document.getElementById("invoice");

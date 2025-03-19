@@ -1,12 +1,12 @@
 import { querys } from "@/src/app/lib/DbConnection";
 import { verifyToken } from "@/src/app/lib/Token";
 import { NextResponse } from "next/server";
-import path from "path";
-import { writeFile } from "fs/promises";
+import cloudinary from "../../lib/cloudinary ";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
+    
     try {
         const auth = await verifyToken(req)
         const data = await req.formData()
@@ -43,35 +43,16 @@ export async function POST(req) {
             }, { status: 400 });
         }
 
-
         const bytes = await logo.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        const extname = path.extname(logo.name);
-        const basename = path.basename(logo.name, extname);
+        const uploadResponse = await cloudinary.uploader.upload(`data:${mimeType};base64,${buffer.toString('base64')}`, {
+            folder: 'uploads/logo',
+            resource_type: 'image',
+        });
 
-        // Create new filename with a timestamp before the extension
-        const newName = `${basename}-${Date.now().toString()}${extname}`;
-
-        // Specify the directory on the local PC
-        const uploadDirectory = path.join(process.cwd(), "public", "uploads", "logo");
-        // const uploadDirectory = 'uploads/logo'; // Change to your desired location
-
-        // Create the full path for storing the file
-        const storePath = path.join(uploadDirectory, newName);
-
-
-        if (!fs.existsSync(uploadDirectory)) {
-            await mkdir(uploadDirectory, { recursive: true }); // Creates folders if missing
-        }
-
-        // Store path (relative or for other purposes)
-        // const storePath = path.join('Downloads', newName);
-
-        // Write the file to the new location
-        await writeFile(storePath, buffer);
-
-        const imagePath = `/uploads/logo/${newName}`;
+        const imagePath = uploadResponse.secure_url;
+// console.log(imagePath);
 
         const { decoded } = auth
         const marketerMobile = decoded.mobile
@@ -169,7 +150,7 @@ export async function PUT(req) {
     try {
         const auth = await verifyToken(req);
         const data = await req.formData();
-        const logo = data.get('file');
+        const logo = data.get('file');  
         const commission = parseFloat(data.get('commission'));
         const magamai = parseFloat(data.get('magamai'));
         const weekoff = data.get('weekoff');
@@ -206,36 +187,21 @@ export async function PUT(req) {
                 }, { status: 400 });
             }
 
-            // const bytes = await logo.arrayBuffer();
-            // const buffer = Buffer.from(bytes);
-
-            // const extname = path.extname(logo.name);
-            // const basename = path.basename(logo.name, extname);
-            // const newName = `${basename}-${Date.now().toString()}${extname}`;
-            // const uploadPath = path.join('public/uploads/logo', newName);
-            // storePath = path.join('uploads/logo', newName);
-
-            // await writeFile(uploadPath, buffer);
             const bytes = await logo.arrayBuffer();
             const buffer = Buffer.from(bytes);
 
-            const extname = path.extname(logo.name);
-            const basename = path.basename(logo.name, extname);
+            if (existing) {
+                // Extract public ID from Cloudinary URL
+                const publicId = existing.split('/').pop().split('.')[0]; 
+                await cloudinary.uploader.destroy(`uploads/logo/${publicId}`); // Delete old logo
+            }
 
-            // Create new filename with a timestamp before the extension
-            const newName = `${basename}-${Date.now().toString()}${extname}`;
-
-            // Specify the directory on the local PC
-            const uploadDirectory = 'C:\\images'; // Change to your desired location
-
-            // Create the full path for storing the file
-            storePath = path.join(uploadDirectory, newName);
-
-            // Store path (relative or for other purposes)
-            // const storePath = path.join('Downloads', newName);
-
-            // Write the file to the new location
-            await writeFile(storePath, buffer);
+            const uploadResponse = await cloudinary.uploader.upload(`data:${mimeType};base64,${buffer.toString('base64')}`, {
+                folder: 'uploads/logo',
+                resource_type: 'image',
+            });
+    
+             storePath = uploadResponse.secure_url;
         }
 
         // Perform an UPDATE operation, including the logo if it has been changed

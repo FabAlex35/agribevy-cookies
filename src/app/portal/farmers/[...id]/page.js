@@ -52,7 +52,6 @@ const FarmerDetails = ({ params }) => {
     const [multiModal, setMultiModal] = useState(false)
     const [isModalOpenSingle, setIsModalOpenSingle] = useState(false);
     const router=useRouter()
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
 
     const handlePayment = (e) => {
         const value = e.target.value;
@@ -432,7 +431,7 @@ const FarmerDetails = ({ params }) => {
                                                     {details
                                                         .sort((a, b) => new Date(b?.soldDate) - new Date(a?.soldDate))
                                                         .map(transaction => {
-                                                            const ImageURL = `${baseUrl}/${transaction.image}`;
+                                                            const ImageURL = `${transaction.image}`;
                                                             return (
                                                                 <div className="col-sm-12 col-md-6 col-lg-4 mb-4" key={transaction.id}>
                                                                     <div className="card border rounded-lg p-4 hover-shadow transition-shadow position-relative h-100">

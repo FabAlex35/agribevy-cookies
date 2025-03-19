@@ -29,10 +29,7 @@ const MultiFarmer = ({ data }) => {
     const [advanceRupee, setAdvanceRupee] = useState(null)
     const [error, setError] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // const path = data?.detail.logo.split('\\')
-    const imgPath = `${baseUrl}/${data?.detail.logo}`
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    const imgPath = `${data?.detail.logo}`
 
     const downloadInvoiceAsPDF = async () => {
         const element = document.getElementById('invoice');

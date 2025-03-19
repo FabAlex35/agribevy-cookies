@@ -2,23 +2,19 @@ import { querys } from "@/src/app/lib/DbConnection";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { verifyToken } from "@/src/app/lib/Token";
-import path from "path";
-import { writeFile } from "fs/promises";
+import cloudinary from "../../lib/cloudinary";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req) {
     try {
-        // Verify the token
         const auth = await verifyToken(req);
-
         const data = await req.formData();
         const products = [];
-        let index = 0;
 
-        // Extract products from FormData
+        let index = 0;
         while (data.has(`products[${index}][name]`)) {
-            const product = {
+            products.push({
                 name: data.get(`products[${index}][name]`),
                 veg_id: data.get(`products[${index}][veg_id]`),
                 farmer: data.get(`products[${index}][farmer]`),
@@ -26,20 +22,16 @@ export async function POST(req) {
                 quantity: parseInt(data.get(`products[${index}][quantity]`), 10) || 0,
                 unit: data.get(`products[${index}][unit]`),
                 price: parseInt(data.get(`products[${index}][price]`), 10) || 0,
-                farmer_wage: parseInt(data.get(`products[${index}][farmer_wage]`), 10) || 0,
+                farmer_wage: 0, // Will be updated later
                 farmer_rent: parseInt(data.get(`products[${index}][farmer_rent]`), 10) || 0,
                 sack_price: parseInt(data.get(`products[${index}][sack_price]`), 10) || 0,
                 file: data.get(`products[${index}][file]`)
-            };
-            products.push(product);
+            });
             index++;
         }
 
         if (products.length === 0) {
-            return NextResponse.json({
-                message: 'No products provided',
-                status: 400
-            }, { status: 400 });
+            return NextResponse.json({ message: 'No products provided', status: 400 }, { status: 400 });
         }
 
         const { decoded } = auth;
@@ -47,10 +39,7 @@ export async function POST(req) {
         const role = decoded.role;
 
         if (role !== 'marketer' && role !== 'assistant') {
-            return NextResponse.json({
-                message: 'Unauthorized',
-                status: 403
-            }, { status: 403 });
+            return NextResponse.json({ message: 'Unauthorized', status: 403 }, { status: 403 });
         }
 
         if (role === 'assistant') {
@@ -60,153 +49,98 @@ export async function POST(req) {
             });
 
             if (!num) {
-                return NextResponse.json({
-                    message: 'User not found',
-                    status: 404
-                }, { status: 404 });
+                return NextResponse.json({ message: 'User not found', status: 404 }, { status: 404 });
             }
 
             marketerMobile = num?.created_by;
         }
 
-        // Validate vegetable ownership for the marketer
+        // **✅ Fetch All Valid Vegetables at Once**
         const vegIds = products.map(product => product.veg_id);
+        const existingVegetables = await querys({
+            query: `SELECT veg_id FROM vegetables WHERE veg_id IN (${vegIds.map(() => '?').join(',')}) AND marketer_mobile = ?`,
+            values: [...vegIds, marketerMobile]
+        });
 
-        let existingVegetables;
-        try {
-            if (vegIds.length === 0) {
-                return NextResponse.json({
-                    message: 'No vegetable IDs provided',
-                    status: 400
-                }, { status: 400 });
-            }
-
-            // Modify the query to handle the array properly
-            existingVegetables = await querys({
-                query: `SELECT veg_id FROM vegetables WHERE veg_id IN (${vegIds.map(() => '?').join(',')}) AND marketer_mobile = ?`,
-                values: [...vegIds, marketerMobile] // Spread vegIds into individual parameters
-            });
-        } catch (error) {
-            console.error("Database Query Error:", error);
-            return NextResponse.json({
-                message: 'Error fetching vegetables',
-                status: 500
-            }, { status: 500 });
-        }
-
-        // Check query results
-        if (!existingVegetables || !Array.isArray(existingVegetables)) {
-            console.error("Unexpected Query Result:", existingVegetables);
-            return NextResponse.json({
-                message: 'Failed to validate vegetables',
-                status: 500
-            }, { status: 500 });
-        }
-
-        const validVegIds = new Set(existingVegetables.map(veg => veg.veg_id)); // Extract valid vegetable IDs
+        const validVegIds = new Set(existingVegetables.map(veg => veg.veg_id));
         for (const product of products) {
             if (!validVegIds.has(product.veg_id)) {
-                return NextResponse.json({
-                    message: `Invalid vegetable ID: ${product.veg_id}`,
-                    status: 404
-                }, { status: 404 });
+                return NextResponse.json({ message: `Invalid vegetable ID: ${product.veg_id}`, status: 404 }, { status: 404 });
             }
         }
 
-        // Fetch and set farmer_wage from wages table for each product
+        // **✅ Fetch All Wages in Bulk**
+        const quantities = products.map(product => product.quantity);
+        const wagesData = await querys({
+            query: `SELECT from_kg, to_kg, wage FROM wages WHERE marketer_mobile = ?`,
+            values: [marketerMobile]
+        });
+
+        // **Map Wages Efficiently**
         for (const product of products) {
-            const [wageRecord] = await querys({
-                query: `SELECT wage FROM wages WHERE marketer_mobile = ? AND from_kg <= ? AND to_kg >= ? LIMIT 1`,
-                values: [marketerMobile, product.quantity, product.quantity]
-            });
-
-            if (wageRecord) {
-                product.farmer_wage = wageRecord.wage; // Set farmer_wage if a matching record is found
-            }
-            else {
-                product.farmer_wage = 0;
-            }
+            const wageRecord = wagesData.find(w => product.quantity >= w.from_kg && product.quantity <= w.to_kg);
+            product.farmer_wage = wageRecord ? wageRecord.wage : 0;
         }
-        // Prepare and execute database inserts
-        const insertPromises = products.map(async (product) => {
-            const id = nanoid();
-            let storePath;
 
+        // **✅ Upload Images in Parallel**
+        const uploadPromises = products.map(async (product) => {
             if (product.file) {
                 const mimeType = product.file.type;
-                const validMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-
-                if (!validMimeTypes.includes(mimeType)) {
-                    throw new Error(`Invalid file type for ${product.name}. Only JPEG, PNG, and JPG are allowed.`);
+                if (!['image/jpeg', 'image/png', 'image/jpg'].includes(mimeType)) {
+                    throw new Error(`Invalid file type for ${product.name}.`);
                 }
 
                 const bytes = await product.file.arrayBuffer();
                 const buffer = Buffer.from(bytes);
 
-                const extname = path.extname(product.file.name);
-                const basename = path.basename(product.file.name, extname);
+                const uploadResponse = await cloudinary.uploader.upload(`data:${mimeType};base64,${buffer.toString('base64')}`, {
+                    folder: 'uploads',
+                    resource_type: 'image'
+                });
 
-                // Create new filename with a timestamp
-                const newName = `${basename}-${Date.now().toString()}${extname}`;
-                const uploadDirectory = 'uploads/';
-                storePath = path.join(uploadDirectory, newName);
-
-                // Write the file to the new location
-                await writeFile(storePath, buffer);
+                product.image = uploadResponse.secure_url; // Set uploaded image URL
             } else {
-
                 const [{ list_id }] = await querys({
                     query: `SELECT list_id FROM vegetables WHERE veg_id=?`,
                     values: [product.veg_id]
-                })
+                });
 
                 const [{ path }] = await querys({
                     query: `SELECT path FROM veg_list WHERE veg_id=?`,
                     values: [list_id]
-                })
-                // Default image path
-                // storePath = "C:\\images\\veg.jpg";
-                storePath = path;
+                });
 
+                product.image = path;
             }
-
-            return querys({
-                query: `INSERT INTO products (product_id, vegetable_id, proposed_price, farmer_mobile, quantity,
-                          quantity_available, quantity_sold, unit, image, farmer_wage, farmer_rent,sack_price) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)`,
-                values: [id, product.veg_id, product.price, product.mobile, product.quantity, product.quantity, 0, product.unit, storePath, product.farmer_wage, product.farmer_rent, product.sack_price]
-            });
         });
 
-        const results = await Promise.all(insertPromises);
+        await Promise.all(uploadPromises); // **Wait for all images to upload**
 
-        // Check if all inserts were successful
-        if (results.every(result => result.affectedRows > 0)) {
-            return NextResponse.json({
-                message: 'All products added successfully',
-                status: 200
-            }, { status: 200 });
+        // **✅ Perform Bulk Insert**
+        const insertValues = products.map(product => [
+            nanoid(), product.veg_id, product.price, product.mobile, product.quantity,
+            product.quantity, 0, product.unit, product.image, product.farmer_wage, product.farmer_rent, product.sack_price
+        ]);
+
+        const placeholders = insertValues.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(',');
+        const flattenedValues = insertValues.flat();
+
+        const result = await querys({
+            query: `INSERT INTO products (product_id, vegetable_id, proposed_price, farmer_mobile, quantity,
+                    quantity_available, quantity_sold, unit, image, farmer_wage, farmer_rent, sack_price) 
+                    VALUES ${placeholders}`,
+            values: flattenedValues
+        });
+
+        if (result.affectedRows > 0) {
+            return NextResponse.json({ message: 'All products added successfully', status: 200 }, { status: 200 });
         }
 
-        return NextResponse.json({
-            message: 'Some products failed to be added',
-            status: 400
-        }, { status: 400 });
+        return NextResponse.json({ message: 'Some products failed to be added', status: 400 }, { status: 400 });
 
     } catch (error) {
         console.error('Server Error:', error);
-
-        if (error.code === 'ER_DUP_ENTRY') {
-            return NextResponse.json({
-                message: 'Duplicate product found',
-                status: 409
-            }, { status: 409 });
-        }
-
-        return NextResponse.json({
-            message: 'Server Error',
-            status: 500
-        }, { status: 500 });
+        return NextResponse.json({ message: 'Server Error', status: 500 }, { status: 500 });
     }
 }
 

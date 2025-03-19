@@ -27,9 +27,7 @@ const MultiInvoice = ({ data, getInvoice, language }) => {
     const [max, setMax] = useState(null)
     const [error, setError] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
-    const path = data?.detail.logo.split('\\')
-    const imgPath = `${baseUrl}/${data?.detail.logo}`
+    const imgPath = `${data?.detail.logo}`
     const [transactionType, setTransactionType] = useState("fullpayment")
 
     const handlePayment = (e) => {

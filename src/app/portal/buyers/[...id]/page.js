@@ -52,7 +52,6 @@ const BuyerDetails = ({ params }) => {
     const [multiValue, setMultiValue] = useState([])
     const [multiModal, setMultiModal] = useState(false)
     const router = useRouter()
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL
 
     const handlePayment = (e) => {
         const value = e.target.value;
