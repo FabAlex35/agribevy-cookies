@@ -9,13 +9,15 @@ import { RxCrossCircled } from "react-icons/rx";
 import { IoClose, IoCloseCircleOutline } from 'react-icons/io5'
 import { addSackAPI, addSettingsAPI, addWageAPI, deleteSackAPI, deleteWageAPI, editSackAPI, editWageAPI, getMySettingsAPI, getSackAPI, getWageAPI, updateSettingsAPI } from '@/src/Components/Api'
 import Spinner from '@/src/Components/Spinner'
-import { changeLanguage, getBillMode } from '@/src/app/features/Slice'
+import { changeLanguage, getBillMode, getIsShow } from '@/src/app/features/Slice'
 import { CiEdit } from 'react-icons/ci'
 import { MdDeleteOutline } from 'react-icons/md'
 import { Modal, Button } from "react-bootstrap";
 import { FiAlertTriangle } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
 import ModalBoxError from '@/src/Components/ModalBoxError'
+import imageCompression from "browser-image-compression";
+
 const Settings = () => {
     const dispatch = useDispatch()
     const languageChanged = useSelector((state) => state?.user?.languageChanged)
@@ -114,10 +116,17 @@ const Settings = () => {
             setSpin(true)
             const formData = new FormData();
             const payload = { ...data }
+            const options = {
+                maxSizeMB: 1, // Max size in MB
+                maxWidthOrHeight: 800, // Max width/height
+                useWebWorker: true,
+            };
+
             for (const key in payload) {
 
                 if (key === 'file' && payload[key].length > 0) {
-                    formData.append(key, payload[key][0]);
+                    const compressedFile = await imageCompression(payload[key][0], options);
+                    formData.append(key, compressedFile);
                 } else {
                     formData.append(key, payload[key]);
                 }
@@ -153,6 +162,7 @@ const Settings = () => {
             // const path = response?.data.logo.split('\\')
             const ImageURL = `${response?.data.logo}`
             setImgPath(ImageURL)
+            dispatch(getIsShow(true))
             setEdit(false)
             setLoading(false)
             reset(response?.data)

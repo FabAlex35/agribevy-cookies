@@ -21,12 +21,14 @@ import { MdOutlineCurrencyExchange } from "react-icons/md";
 import { HiCurrencyRupee } from "react-icons/hi";
 import { GrNotes } from 'react-icons/gr';
 import { getMySettingsAPI, subsCkeck } from './Api';
-import { getBillMode, getSubscription, getSubscriptionData } from '../app/features/Slice';
-import { useDispatch } from 'react-redux';
+import { getBillMode, getIsShow, getSubscription, getSubscriptionData } from '../app/features/Slice';
+import { useDispatch, useSelector } from 'react-redux';
+
 const SideNav = ({ isOpen, role, access, translations, app_language }) => {
     const pathname = usePathname()
     const dispatch = useDispatch()
-    const [isNavigationAllowed,setIsNavigationAllowed] = useState(null); 
+    // const [isNavigationAllowed,setIsNavigationAllowed] = useState(null); 
+    const isNavigationAllowed = useSelector((state) => state?.user?.isShow) 
     const router = useRouter()     
 
     const subsApicall = async()=>{
@@ -40,7 +42,8 @@ const SideNav = ({ isOpen, role, access, translations, app_language }) => {
     const getSettings = async () => {
             const response = await getMySettingsAPI()
             if (response?.status === 200) {
-                setIsNavigationAllowed(true)
+                // setIsNavigationAllowed(true)
+                dispatch(getIsShow(true))
                 const datas = {
                     bill_type: response.data.bill_type,
                     show: response.data.magamai_show,

@@ -188,14 +188,12 @@ export async function PUT(req) {
     try {
         const auth = await verifyToken(req);
         const { decoded } = auth;
+        const productList = await req.json();
 
-        const productList = await req.json(); // Expecting an array of product objects
         if (!Array.isArray(productList) || productList.length === 0) {
-            return NextResponse.json({
-                message: 'Invalid payload',
-                status: 400
-            }, { status: 400 });
+            return NextResponse.json({ message: 'Invalid payload', status: 400 }, { status: 400 });
         }
+
         const marketerMobile = decoded.role === 'assistant'
             ? await getMarketerMobileForAssistant(decoded.userId)
             : decoded.mobile;
@@ -203,157 +201,92 @@ export async function PUT(req) {
         const user_name = await getUserName(marketerMobile);
         const invoiceId = await generateInvoiceId(user_name, marketerMobile);
 
-        for (const product of productList) {
+        // Run database operations in parallel
+        const updatePromises = productList.map(async (product) => {
             const trans_id = nanoid(15);
-            const {
-                buyer_name,
-                sold,
-                unit,
-                amount,
-                paid,
-                commission,
-                wageCheck,
-                rentCheck,
-                wage,
-                rent,
-                mobile,
-                status,
-                product_id
-            } = product;
+            const { buyer_name, sold, amount, paid, commission, wageCheck, rentCheck, wage, rent, mobile, product_id } = product;
 
             const soldQty = parseInt(sold, 10);
             const soldAmount = parseFloat(amount);
 
             const productData = await getProductDetails(product_id);
-
             if (!productData) {
-                return NextResponse.json({
-                    message: `Product with ID ${product_id} not found`,
-                    status: 404
-                }, { status: 404 });
+                throw new Error(`Product with ID ${product_id} not found`);
             }
 
-            const existingTransactions = await querys({
-                query: `SELECT * FROM transactions WHERE product_id = ?`,
-                values: [product_id]
-            });
+            if (productData.quantity_available < soldQty) {
+                throw new Error(`Insufficient quantity available for product ID ${product_id}`);
+            }
+
+            const [farmerAdvance, buyerAdvance, magamaiSource, existingTransactions] = await Promise.all([
+                getFarmerAdvance(productData.farmer_mobile),
+                getBuyerAdvance(mobile),
+                getMagamaiSource(marketerMobile),
+                querys({ query: `SELECT * FROM transactions WHERE product_id = ?`, values: [product_id] })
+            ]);
 
             let [{ magamaiType }] = await querys({
                 query: 'SELECT magamaiType FROM default_setting WHERE marketer_mobile = ?',
                 values: [marketerMobile]
             });
 
-            let farRent, farWage, sackPrice, magamai;
+            let farRent = 0, farWage = 0, sackPrice = 0, magamai = 0;
 
-            if (existingTransactions.length > 0) {
-                // Set to 0 if transactions already exist
-                farRent = 0;
-                farWage = 0;
-                sackPrice = 0;
-                if (magamaiType === "sack") {
-                    magamai = 0
-                }
-            } else {
-                // Use values from the productData
+            if (existingTransactions.length === 0) {
                 farRent = parseInt(productData.farmer_rent, 10);
                 farWage = parseInt(productData.farmer_wage, 10);
                 sackPrice = parseFloat(productData.sack_price);
-                if (magamaiType === "sack" && sackPrice != 0) {
-                    magamai = productData.magamai ? parseFloat(productData.magamai) : 0
-                }
-                else if (magamaiType === "sack" && sackPrice == 0) {
-                    magamai = 0
+                if (magamaiType === "sack" && sackPrice !== 0) {
+                    magamai = productData.magamai ? parseFloat(productData.magamai) : 0;
                 }
             }
 
-            if (productData.quantity_available < soldQty) {
-                return NextResponse.json({
-                    message: `Insufficient quantity available for product ID ${product_id}`,
-                    status: 400
-                }, { status: 400 });
-            }
-
-            const farmerAdvance = await getFarmerAdvance(productData.farmer_mobile);
-            const buyerAdvance = await getBuyerAdvance(mobile);
-            if (magamaiType === "percentage") {
-                magamai = productData.magamai ? parseInt(productData.magamai, 10) : 0;
-            }
             const com = Math.ceil(soldAmount * (commission / 100));
-
-
-            const magamaiSource = await getMagamaiSource(marketerMobile);
-
             let fAmount = (soldAmount - (com + farRent + farWage)) + sackPrice;
+
             if (magamaiSource === 'farmer') {
                 if (magamaiType === "sack") {
-                    fAmount = ((soldAmount - (com + magamai + farRent + farWage)) + sackPrice)
-                }
-                if (magamaiType === "percentage") {
-                    const magamaiCut = Math.ceil(com * (magamai / 100));
-                    fAmount = (soldAmount - (com + farRent + magamaiCut + farWage)) + sackPrice;
+                    fAmount -= magamai;
+                } else if (magamaiType === "percentage") {
+                    fAmount -= Math.ceil(com * (magamai / 100));
                 }
             }
 
-            const bAmount =
-                parseFloat(soldAmount) +
-                (wageCheck ? parseFloat(wage) : 0) +
-                (rentCheck ? parseFloat(rent) : 0);
+            const bAmount = parseFloat(soldAmount) + (wageCheck ? parseFloat(wage) : 0) + (rentCheck ? parseFloat(rent) : 0);
 
-            const { finalFarmerAdvance, finalFarmerAmount } = adjustFarmerAdvance(farmerAdvance, fAmount, productData.farmer_mobile);
-            const { finalBuyerAdvance, finalBuyerAmount } = adjustBuyerAdvance(buyerAdvance, bAmount, mobile, paid);
+            const [{ finalFarmerAdvance, finalFarmerAmount }, { finalBuyerAdvance, finalBuyerAmount }] = await Promise.all([
+                adjustFarmerAdvance(farmerAdvance, fAmount, productData.farmer_mobile),
+                adjustBuyerAdvance(buyerAdvance, bAmount, mobile, paid)
+            ]);
 
             if (paid) {
                 await insertAccountRecord(soldAmount, marketerMobile, mobile, buyer_name.split('-')[0]);
             }
 
-            await updateProduct(product_id, productData.quantity_available - soldQty, productData.quantity_sold + soldQty);
+            await Promise.all([
+                updateProduct(product_id, productData.quantity_available - soldQty, productData.quantity_sold + soldQty),
+                insertTransaction({
+                    trans_id, vegetable_id: productData.vegetable_id, product_id, marketer_mobile: marketerMobile, buyer_mobile: mobile,
+                    amount: soldAmount, farmer_mobile: productData.farmer_mobile, quantity: soldQty, veg_name: productData.veg_name,
+                    commission, farmer_payment: finalFarmerAmount, buyer_payment: finalBuyerAmount, rent, wage, magamai, magamai_src: magamaiSource,
+                    magamai_type: magamaiType, farmer_status: finalFarmerAmount === 0 ? 'paid' : 'pending', farmer_amount: fAmount,
+                    buyer_status: finalBuyerAmount === 0 ? 'paid' : 'pending', buyer_amount: bAmount, farmer_advance: farmerAdvance,
+                    buyer_advance: buyerAdvance, invoiceId, farmer_rent: farRent, farmer_wage: farWage, sack_price: sackPrice,
+                    f_quantity: soldQty, f_amount: soldAmount
+                })
+            ]);
+        });
 
-            await insertTransaction({
-                trans_id,
-                vegetable_id: productData.vegetable_id,
-                product_id,
-                marketer_mobile: marketerMobile,
-                buyer_mobile: mobile,
-                amount: soldAmount,
-                farmer_mobile: productData.farmer_mobile,
-                quantity: soldQty,
-                veg_name: productData.veg_name,
-                commission: commission,
-                farmer_payment: finalFarmerAmount,
-                buyer_payment: finalBuyerAmount,
-                rent: rent,
-                wage: wage,
-                magamai: magamai,
-                magamai_src: magamaiSource,
-                magamai_type: magamaiType,
-                farmer_status: finalFarmerAmount === 0 ? 'paid' : 'pending',
-                farmer_amount: fAmount,
-                buyer_status: finalBuyerAmount === 0 ? 'paid' : 'pending',
-                buyer_amount: bAmount,
-                farmer_advance: farmerAdvance,
-                buyer_advance: buyerAdvance,
-                invoiceId,
-                farmer_rent: farRent,
-                farmer_wage: farWage,
-                sack_price: sackPrice,
-                f_quantity: soldQty,
-                f_amount: soldAmount
-            });
-        }
+        await Promise.all(updatePromises);
 
-        return NextResponse.json({
-            message: 'Products updated successfully',
-            status: 200
-        }, { status: 200 });
+        return NextResponse.json({ message: 'Products updated successfully', status: 200 }, { status: 200 });
 
     } catch (error) {
-        console.error(error);
-        return NextResponse.json({
-            message: 'Server Error',
-            status: 500
-        }, { status: 500 });
+        console.error('PUT API Error:', error);
+        return NextResponse.json({ message: 'Server Error', status: 500 }, { status: 500 });
     }
 }
+
 
 // Utility Functions
 

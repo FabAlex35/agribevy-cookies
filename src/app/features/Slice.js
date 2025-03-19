@@ -13,7 +13,8 @@ const Slice=createSlice({
         subscription: null,
         data: {},
         bill: {},
-        session: 0
+        session: 0,
+        isShow: null,
     },
     reducers:{
         changeName:(state,action)=>{
@@ -46,8 +47,11 @@ const Slice=createSlice({
         getSession:(state,action)=>{
             state.session = action.payload
         },
+        getIsShow:(state,action)=>{
+            state.isShow = action.payload
+        },
     }
 })
 
-export const {changeName,getUserDetailsSlice,getUserLanguageSlice,changeLanguage,getAppLanguageSlice,changeAppLanguage,getSubscription,getSubscriptionData,getBillMode,getSession}= Slice.actions
+export const {changeName,getUserDetailsSlice,getUserLanguageSlice,changeLanguage,getAppLanguageSlice,changeAppLanguage,getSubscription,getSubscriptionData,getBillMode,getSession,getIsShow}= Slice.actions
 export default Slice.reducer

@@ -6,6 +6,8 @@ import { FaCircleCheck } from 'react-icons/fa6'
 import { RxCrossCircled } from "react-icons/rx";
 import { IoClose } from 'react-icons/io5'
 import Spinner from './Spinner';
+import imageCompression from "browser-image-compression";
+
 const AddInventoryTable = ({ searchProduct, searchFarmer, viewInventory, language, sacks, appLanguage,translations }) => {
     const [rows, setRows] = useState([{ sack_price: sacks[0]?.sack_price, unit: "kg", veg_id: null, mobile: null, image: null }]);
     const [errors, setErrors] = useState([]);
@@ -262,9 +264,8 @@ const AddInventoryTable = ({ searchProduct, searchFarmer, viewInventory, languag
             });
         });
 
-
         // Append processed rows to formData
-        processedRows.forEach((row, index) => {
+        processedRows.forEach(async(row, index) => {
             formData.append(`products[${index}][name]`, row.name);
             formData.append(`products[${index}][veg_id]`, row.veg_id);
             formData.append(`products[${index}][farmer]`, row.farmer);
@@ -278,8 +279,8 @@ const AddInventoryTable = ({ searchProduct, searchFarmer, viewInventory, languag
             formData.append(`products[${index}][sack_price]`, row.sack_price);
 
             if (row.image) {
-                const imageName = `image_${Date.now()}_${index}.jpg`;
-                formData.append(`products[${index}][file]`, row.image, imageName);
+                const compressedFile = await imageCompression(row.image, options);
+                formData.append(`products[${index}][file]`, compressedFile);
             }
         });
         setSpin(true);
