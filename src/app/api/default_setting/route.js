@@ -1,7 +1,7 @@
 import { querys } from "@/src/app/lib/DbConnection";
 import { verifyToken } from "@/src/app/lib/Token";
 import { NextResponse } from "next/server";
-import cloudinary from "@/src/app/lib/cloudinary ";
+import cloudinary from "@/src/app/lib/cloudinary";
 
 export const dynamic = "force-dynamic";
 
