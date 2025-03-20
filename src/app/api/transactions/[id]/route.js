@@ -55,25 +55,28 @@ export async function GET(req) {
 
 export async function PUT(req) {
     try {
-        const auth = await verifyToken(req);
-
+        const auth = await verifyToken(req)
+        const { decoded } = auth;
         const { pathname } = new URL(req.url);
         const segments = pathname.split('/').filter(segment => segment);
         const type = segments.pop();
-
+ 
         const data = await req.json();
         const paymentAmount = parseInt(data.payment, 10);
-        const ids = data.id;
-        const user = data.role;
-        const phone = data.phone;
-        const userName = data.name;
-
-        const { decoded } = auth;
+        const ids = data.id
+        const user = data.role
+        const phone =data.phone
+        const userName = data.name
+ 
         const role = decoded.role;
-        let marketerMobile = decoded.mobile;
-
+        let marketerMobile=decoded.mobile
+ 
+        // Check if the role is valid
         if (!role || (role !== 'marketer' && role !== 'assistant')) {
-            return NextResponse.json({ message: 'Unauthorized', status: 403 }, { status: 403 });
+            return NextResponse.json({
+                message: 'Unauthorized',
+                status: 403
+            }, { status: 403 });
         }
 
         if (role === 'assistant') {
@@ -81,92 +84,139 @@ export async function PUT(req) {
                 query: `SELECT created_by FROM users WHERE user_id = ?`,
                 values: [decoded.userId]
             });
-
+ 
             if (!num) {
-                return NextResponse.json({ message: 'User not found', status: 404 }, { status: 404 });
+                return NextResponse.json({
+                    message: 'User not found',
+                    status: 404
+                }, { status: 404 });
             }
-
+ 
             marketerMobile = num?.created_by;
         }
-
-        // Insert payment record
+ 
         const insertResult = await querys({
             query: `INSERT INTO accounts (amount, marketer_mobile, mobile, user) VALUES (?, ?, ?, ?)`,
             values: [paymentAmount, marketerMobile, phone, userName]
         });
-
+ 
         if (insertResult.affectedRows <= 0) {
-            return NextResponse.json({ message: 'Failed to insert payment record.', status: 500 }, { status: 500 });
+            return NextResponse.json({
+                message: 'Failed to insert payment record.',
+                status: 500
+            }, { status: 500 });
         }
-
-        let totalPaid = paymentAmount;
-        let updateQueries = [];
-
-        if (user === 'buyer') {
-            // Get all transactions in one query to reduce database calls
-            const transactions = await querys({
-                query: `SELECT transaction_id, buyer_payment FROM transactions WHERE transaction_id IN (?)`,
-                values: [ids]
-            });
-
-            for (const transaction of transactions) {
-                if (totalPaid <= 0) break;
-                const { transaction_id, buyer_payment } = transaction;
-
-                let newPayment = Math.max(0, buyer_payment - totalPaid);
-                let newStatus = newPayment === 0 ? "paid" : "pending";
-                totalPaid -= buyer_payment;
-
-                updateQueries.push(
-                    querys({
-                        query: `UPDATE transactions SET buyer_payment = ?, buyer_status = ? WHERE transaction_id = ?`,
-                        values: [newPayment, newStatus, transaction_id]
-                    })
-                );
-            }
+ 
+        if (user == 'buyer') {
+                let totalPaid = paymentAmount;
+                for (const transactionId of ids) {
+                    if (totalPaid <= 0) break;
+ 
+                    const [rows] = await querys({
+                        query: `SELECT buyer_payment, buyer_status FROM transactions WHERE transaction_id = ?`,
+                        values: [transactionId]
+                    });
+ 
+                    if (!rows) {
+                        return NextResponse.json({
+                            message: `Transaction ${transactionId} not found`,
+                            status: 404
+                        }, { status: 404 });
+                    }
+ 
+                    const currentPayment = rows.buyer_payment;
+ 
+                    if (currentPayment <= totalPaid) {
+                        await querys({
+                            query: 'UPDATE transactions SET buyer_payment = ?, buyer_status = "paid" WHERE transaction_id = ?',
+                            values: [0, transactionId]
+                        });
+                        totalPaid -= currentPayment;
+                    } else {
+                        const remaining=currentPayment-totalPaid
+                        await querys({
+                            query: 'UPDATE transactions SET buyer_payment = ?, buyer_status = "pending" WHERE transaction_id = ?',
+                            values: [remaining, transactionId]
+                        });
+                        totalPaid = 0;
+                    }
+                }
         } else {
-            // Farmer Payments
             if (type === 'single') {
-                updateQueries.push(
-                    querys({
-                        query: `UPDATE transactions SET farmer_payment = GREATEST(0, farmer_payment - ?), 
-                                farmer_status = CASE WHEN (farmer_payment - ?) <= 0 THEN 'paid' ELSE 'pending' END 
-                                WHERE transaction_id = ?`,
-                        values: [paymentAmount, paymentAmount, ids]
-                    })
-                );
-            } else {
-                // Get all transactions in one query
-                const transactions = await querys({
-                    query: `SELECT transaction_id, farmer_payment FROM transactions WHERE transaction_id IN (?)`,
+                const [rows] = await querys({
+                    query: `SELECT farmer_payment, farmer_status FROM transactions WHERE transaction_id = ?`,
                     values: [ids]
                 });
-
-                for (const transaction of transactions) {
+ 
+                if (!rows) {
+                    return NextResponse.json({
+                        message: 'Transaction not found',
+                        status: 404
+                    }, { status: 404 });
+                }
+ 
+                const currentPayment = rows.farmer_payment;
+ 
+                if (currentPayment === paymentAmount) {
+                    await querys({
+                        query: 'UPDATE transactions SET farmer_payment = ?, farmer_status = "paid" WHERE transaction_id = ?',
+                        values: [0, ids]
+                    });
+                } else {
+                    const balance = currentPayment - paymentAmount;
+                    await querys({
+                        query: 'UPDATE transactions SET farmer_payment = ?, farmer_status = "pending" WHERE transaction_id = ?',
+                        values: [balance, ids]
+                    });
+                }
+            } else {
+                let totalPaid = paymentAmount;
+                for (const transactionId of ids) {
                     if (totalPaid <= 0) break;
-                    const { transaction_id, farmer_payment } = transaction;
-
-                    let newPayment = Math.max(0, farmer_payment - totalPaid);
-                    let newStatus = newPayment === 0 ? "paid" : "pending";
-                    totalPaid -= farmer_payment;
-
-                    updateQueries.push(
-                        querys({
-                            query: `UPDATE transactions SET farmer_payment = ?, farmer_status = ? WHERE transaction_id = ?`,
-                            values: [newPayment, newStatus, transaction_id]
-                        })
-                    );
+ 
+                    const [rows] = await querys({
+                        query: `SELECT farmer_payment, farmer_status FROM transactions WHERE transaction_id = ?`,
+                        values: [transactionId]
+                    });
+ 
+                    if (!rows) {
+                        return NextResponse.json({
+                            message: `Transaction ${transactionId} not found`,
+                            status: 404
+                        }, { status: 404 });
+                    }
+ 
+                    const currentPayment = rows.farmer_payment;
+ 
+                    if (currentPayment <= totalPaid) {
+                        await querys({
+                            query: 'UPDATE transactions SET farmer_payment = ?, farmer_status = "paid" WHERE transaction_id = ?',
+                            values: [0, transactionId]
+                        });
+                        totalPaid -= currentPayment;
+                    } else {
+                        const remaining=currentPayment-totalPaid
+                        await querys({
+                            query: 'UPDATE transactions SET farmer_payment = ?, farmer_status = "pending" WHERE transaction_id = ?',
+                            values: [remaining, transactionId]
+                        });
+                        totalPaid = 0;
+                    }
                 }
             }
         }
-
-        // Execute all updates in parallel
-        await Promise.all(updateQueries);
-
-        return NextResponse.json({ message: 'Transaction(s) updated successfully', status: 200 });
-
+ 
+        return NextResponse.json({
+            message: 'Transaction(s) updated successfully',
+            status: 200
+        });
+ 
     } catch (error) {
-        console.error('PUT API Error:', error);
-        return NextResponse.json({ message: 'Server Error', status: 500 }, { status: 500 });
+        console.error(error);
+ 
+        return NextResponse.json({
+            message: 'Server Error',
+            status: 500
+        }, { status: 500 });
     }
 }

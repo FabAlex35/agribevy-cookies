@@ -189,9 +189,12 @@ const AddInventoryTable = ({ searchProduct, searchFarmer, viewInventory, languag
     };
 
     const handleImageChange = (index, file) => {
-        const updatedRows = [...rows];
-        updatedRows[index].image = file;  // Store the uploaded image file
-        setRows(updatedRows);
+        setRows((prevRows) => {
+            const updatedRows = prevRows.map((row, i) =>
+                i === index ? { ...row, image: file } : row
+            );
+            return updatedRows;
+        });
     };
 
     const validateRows = () => {

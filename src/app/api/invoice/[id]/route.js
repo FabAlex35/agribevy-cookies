@@ -114,17 +114,14 @@ export async function PUT(req) {
     try {
         // Verify the token
         const auth = await verifyToken(req);
-
-
-
         const id = decodeURIComponent(new URL(req.url).pathname.split('/').filter(Boolean).pop());
 
         const { decoded } = auth;
         let marketerMobile = decoded.mobile;
         const role = decoded.role;
         const data = await req.json();
-        const user = data.name
-        const phone = data.phone
+        const user = data.name;
+        const phone = data.phone;
         const paymentAmount = parseInt(data.payment, 10);
 
         if (role !== 'marketer' && role !== 'assistant') {
@@ -149,6 +146,8 @@ export async function PUT(req) {
 
             marketerMobile = num.created_by;
         }
+
+        // Insert payment record
         const insertResult = await querys({
             query: `INSERT INTO accounts (amount, marketer_mobile, mobile, user) VALUES (?, ?, ?, ?)`,
             values: [paymentAmount, marketerMobile, phone, user]
@@ -160,12 +159,15 @@ export async function PUT(req) {
                 status: 500
             }, { status: 500 });
         }
+
+        // Fetch transactions linked to the invoice ID
         const rows = await querys({
             query: `SELECT transaction_id, farmer_payment, farmer_status FROM transactions WHERE invoiceId = ? AND farmer_status = 'pending'`,
             values: [id]
         });
 
         let totalPaid = 0;
+        const updateQueries = [];
 
         for (const transaction of rows) {
             if (totalPaid >= paymentAmount) break;
@@ -173,36 +175,19 @@ export async function PUT(req) {
             const transactionPayment = transaction.farmer_payment;
             if (transactionPayment <= (paymentAmount - totalPaid)) {
                 // Full payment for this transaction
-                const updateResult = await querys({
-                    query: `UPDATE transactions SET farmer_status = 'paid', farmer_payment = 0 WHERE transaction_id = ?`,
-                    values: [transaction.transaction_id]
-                });
-
-                if (updateResult.affectedRows <= 0) {
-                    return NextResponse.json({
-                        message: `Failed to update transaction ${transaction.transaction_id} status to paid.`,
-                        status: 500
-                    }, { status: 500 });
-                }
-
+                updateQueries.push(`UPDATE transactions SET farmer_status = 'paid', farmer_payment = 0 WHERE transaction_id = ${transaction.transaction_id}`);
                 totalPaid += transactionPayment;
             } else {
                 // Partial payment
                 const remainingAmount = transactionPayment - (paymentAmount - totalPaid);
-                const updateResult = await querys({
-                    query: `UPDATE transactions SET farmer_payment = ?, farmer_status = 'pending' WHERE transaction_id = ?`,
-                    values: [remainingAmount, transaction.transaction_id]
-                });
-
-                if (updateResult.affectedRows <= 0) {
-                    return NextResponse.json({
-                        message: `Failed to update transaction ${transaction.transaction_id} payment status.`,
-                        status: 500
-                    }, { status: 500 });
-                }
-
+                updateQueries.push(`UPDATE transactions SET farmer_payment = ${remainingAmount}, farmer_status = 'pending' WHERE transaction_id = ${transaction.transaction_id}`);
                 totalPaid = paymentAmount;
             }
+        }
+
+        // Execute all updates in one batch query
+        if (updateQueries.length > 0) {
+            await querys({ query: updateQueries.join("; ") });
         }
 
         return NextResponse.json({
@@ -211,7 +196,7 @@ export async function PUT(req) {
         }, { status: 200 });
 
     } catch (error) {
-        console.error('Error in GET request:', error);
+        console.error('Error in PUT request:', error);
 
         return NextResponse.json({
             message: 'Server Error',

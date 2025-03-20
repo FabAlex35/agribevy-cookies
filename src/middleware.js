@@ -85,7 +85,7 @@ export async function middleware(req) {
                     return response;
          }
     }
-    if(decodedAccess && decodedAccess.exp < currentTime || decodedRefresh && decodedRefresh.exp < currentTime){
+    if(decodedAccess && decodedAccess.exp > currentTime || decodedRefresh && decodedRefresh.exp > currentTime){
         return url.pathname == ("/") ? NextResponse.redirect(new URL("/portal/dashboard", req.url)) : response;
     }
 
