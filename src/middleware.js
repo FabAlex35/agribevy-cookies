@@ -34,10 +34,13 @@ export async function middleware(req) {
 
     const requiresAuth = url.pathname === "/" || url.pathname.startsWith("/portal") || url.pathname.startsWith("/api");
 
+    if(url.pathname.startsWith("/api/trigger-cron")){
+        return response
+    }
+
     if (!requiresAuth) {
         return response;
     }    
-// console.log(!accessToken && !refreshToken, url.pathname);
 
     if (!accessToken && !refreshToken) {
         return url.pathname.startsWith("/portal") ? NextResponse.redirect(new URL("/", req.url)) : response;
@@ -45,9 +48,7 @@ export async function middleware(req) {
 
     let decodedAccess = accessToken ? await verifyToken(accessToken, SECRET_KEY) : null;
     let decodedRefresh = refreshToken ? await verifyToken(refreshToken, REFRESH_SECRET_KEY) : null;
-    // console.log(decodedAccess,decodedRefresh,currentTime,"****************", url.pathname);
-
-    // console.log(!decodedAccess && !decodedRefresh, url.pathname);
+    
     if(!decodedAccess && !decodedRefresh){
          if(url.pathname.startsWith("/portal")){
             // return NextResponse.redirect(new URL("/", req.url));

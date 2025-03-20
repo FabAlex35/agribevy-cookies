@@ -9,13 +9,8 @@ if (!global.cronJob) {
   global.cronJob = null;
 }
 
-// Function to start the cron job
 const startCronJob = () => {
   if (!global.cronJob) {
-    // global.cronJob = cron.schedule('* * * * *', () => {
-    //   console.log('Cron job running every minute');
-    // });
-
     global.cronJob =  cron.schedule('0 0 * * *', async () => {
             const getAll = await querys({
                 query: 'SELECT * FROM subscription_list',
