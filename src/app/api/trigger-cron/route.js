@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { querys } from '../../../lib/DbConnection'; // Adjust path if needed
+import { querys } from '../../lib/DbConnection';
 
 export const dynamic = "force-dynamic";
-
 export async function GET() {
     console.log("Cron job executed at:", new Date().toISOString());
 
