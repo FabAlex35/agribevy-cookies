@@ -514,15 +514,6 @@ export const getSingleFarmerInvoiceAPI = async (id) => {
     }
 }
 
-export const getImageAPI = async (image) => {
-    try {
-        const res = await apiClient.get(`${baseUrl}/api/images/${image}`);
-        return res?.data;
-    } catch (err) {
-        return err?.response?.data;
-    }
-}
-
 
 export const updateBuyerAPI = async (mobile, payload) => {
     try {
