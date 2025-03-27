@@ -16,7 +16,6 @@ export async function querys({ query, values = [] }) {
         pool.end();
         return results;
     } catch (error) {
-        console.log('Error in querys function :', error);
         throw error
     }
 }

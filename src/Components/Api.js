@@ -18,9 +18,7 @@ export const subsCkeck = async () => {
     try {
         const res = await apiClient.get(`${baseUrl}/api/subscriptions`);      
         return res?.data;
-    } catch (err) {
-        console.log(err);
-        
+    } catch (err) {        
         return err?.response?.data;
     }
 }

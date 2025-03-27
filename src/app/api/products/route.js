@@ -174,8 +174,6 @@ export async function GET(req) {  // for farmers
         }
 
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500

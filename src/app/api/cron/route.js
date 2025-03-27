@@ -17,8 +17,6 @@ async function checkAndUpdateSubscriptions() {
             query: 'UPDATE subscription_list SET sub_status = 0 WHERE id = ?',
             values: [subscription.id]
         });
-
-        console.log(`Subscription ID: ${subscription.id} has expired and was updated.`);
     }
 
 }
@@ -26,7 +24,6 @@ async function checkAndUpdateSubscriptions() {
 export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
-            console.log('Checking and updating subscriptions...');
             await checkAndUpdateSubscriptions();
             return res.status(200).json({ message: 'Subscription check completed.' });
         } catch (error) {

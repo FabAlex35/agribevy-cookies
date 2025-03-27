@@ -45,8 +45,6 @@ export default function Home() {
     }
   }
 
-  console.log('rended1');
-
   return (
     <main>
       <div className="bg-login login-height">

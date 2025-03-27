@@ -36,27 +36,20 @@ apiClient.interceptors.response.use(
 
         if (error.response && error.response.status === 401) {
             const errorMessage = error.response.data.message;
-            console.log("Interceptor Caught 401:", errorMessage);
 
             // ✅ Handle refresh scenario
-            if (errorMessage === "Refersh") {
-                console.log("🔄 Refresh token flow triggered...");
-                
+            if (errorMessage === "Refersh") {                
                 if (!isRefreshing) {
                     isRefreshing = true;
-
                     try {
-                        const refreshResponse = await refershBoth(); // Call refresh API
-                        console.log("🔑 Refresh Response:", refreshResponse?.data);
+                        const refreshResponse = await refershBoth();
 
                         if (refreshResponse?.data?.access) {
                             isRefreshing = false;
                             const newToken = refreshResponse.data.access;
 
-                            // ✅ Retry all queued requests with the new token
                             onRefreshed(newToken);
 
-                            // ✅ Retry the failed request
                             originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
                             originalRequest.withCredentials = true;
                             return apiClient(originalRequest);
@@ -83,7 +76,6 @@ apiClient.interceptors.response.use(
 
             // ✅ Handle session expiration (force logout)
             if (errorMessage === "Session Expired") {
-                console.log("🚨 Session expired, logging out...");
                 store.dispatch(getSession(1)); // Dispatch logout session
                 await logoutUserAPI();
 

@@ -263,8 +263,6 @@ export async function PUT(req) {
 
 
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500
@@ -319,8 +317,6 @@ export async function GET(req) {
         }
 
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500
@@ -367,8 +363,6 @@ export async function DELETE(req) {
 
 
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500

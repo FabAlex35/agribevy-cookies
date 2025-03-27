@@ -627,9 +627,6 @@ export async function GET(req) {
                     break;
             }
 
-            console.log(query);
-            
-
             const accountsData = await querys({ query, values: [userMobile, userMobile, userMobile] });
             const [userData] = await querys({
                 query: `SELECT

@@ -291,7 +291,6 @@ const Product = ({ params }) => {
         const payload = { ...data, mobile: buyerid, unit: multiPriceType, status: multiPaid }
 
         const final = preparePayload(payload, selectedItems)
-console.log(final);
 
         const response = await editProductInventoryAPI(final)
         if (response?.status === 200) {

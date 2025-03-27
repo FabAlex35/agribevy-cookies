@@ -41,7 +41,6 @@ const Products = () => {
           value: option?.veg_id,
           label: option?.tamil_name,
         }));
-        console.log(mappedVegetableOptions);
 
         setVegetableOptions(mappedVegetableOptions)
       }

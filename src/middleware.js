@@ -86,9 +86,6 @@ export async function middleware(req) {
                     return response;
          }
     }
-    if(decodedAccess && decodedAccess.exp > currentTime || decodedRefresh && decodedRefresh.exp > currentTime){
-        return url.pathname == ("/") ? NextResponse.redirect(new URL("/portal/dashboard", req.url)) : response;
-    }
 
     if(!decodedAccess){
         if(!decodedRefresh){
@@ -102,6 +99,10 @@ export async function middleware(req) {
                 return NextResponse.redirect(new URL("/portal/dashboard", req.url))
             }
         }
+    }
+    
+    if(decodedAccess && decodedAccess.exp > currentTime || decodedRefresh && decodedRefresh.exp > currentTime){
+        return url.pathname == ("/") ? NextResponse.redirect(new URL("/portal/dashboard", req.url)) : response;
     }
 
     return response;

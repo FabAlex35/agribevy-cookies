@@ -1,4 +1,4 @@
-import { jwtVerify, SignJWT } from 'jose';
+import { decodeJwt, jwtVerify, SignJWT } from 'jose';
 import cookie from "cookie"; // ✅ Fix cookie parsing
 
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET_KEY);

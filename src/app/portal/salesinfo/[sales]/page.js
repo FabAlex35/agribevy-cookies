@@ -80,7 +80,6 @@ const Info = ({ params }) => {
             }
         }
     }, [searchParams]);
-    // console.log(item);
     
     return (
         <div className='app-container'>

@@ -72,7 +72,6 @@ export async function POST(req) {
         }
 
     } catch (error) {
-        console.log(error);
         if (error.code == 'ER_DUP_ENTRY') {
             return NextResponse.json({
                 message: 'Mobile Number already exists',
@@ -124,7 +123,6 @@ export async function GET(req) {
         }
 
     } catch (error) {
-        console.log(error);
         return NextResponse.json({
             message: 'Server Error',
             status: 500

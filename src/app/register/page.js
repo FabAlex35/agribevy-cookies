@@ -63,34 +63,6 @@ export default function Register() {
     libraries,
   });
 
-  // useEffect(() => {
-  //   if (navigator.geolocation) {
-  //     navigator.geolocation.getCurrentPosition(
-  //       async (position) => {
-  //         console.log(position.coords);
-  //         const { latitude, longitude } = position.coords
-  //         try {
-  //           const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},
-  //           ${longitude}&key=AIzaSyBlIiFCk_dzh5-xKpyfFwbux0veNE-w_RI`)
-  //           const data=await response.json()
-  //           // setLocation(data.results[0].formatted_address)
-  //           reset({
-  //             location:data.results[0].formatted_address
-  //           })
-  //         }
-  //         catch (err) {
-  //           console.log(err);
-
-  //         }
-  //       },
-  //     );
-  //   } else {
-  //     console.log("Geolocation not supported");
-  //   }
-  //   console.log(isLoaded);
-
-  // }, []);
-
   useEffect(() => {
 
     if (isLoaded && inputRef.current) {

@@ -3,8 +3,6 @@ import { querys } from '../../lib/DbConnection';
 
 export const dynamic = "force-dynamic";
 export async function GET() {
-    console.log("Cron job executed at:", new Date().toISOString());
-
     // Fetch subscription list
     const getAll = await querys({
         query: 'SELECT * FROM subscription_list',
@@ -20,9 +18,7 @@ export async function GET() {
         let days = each.days - 1;
         const today = new Date();
         const currentDate = today.toISOString().split('T')[0];
-
-        console.log("Checking:", each.end_date, currentDate);
-
+        
         if (each.end_date < currentDate) {
             days = -1;
             await querys({

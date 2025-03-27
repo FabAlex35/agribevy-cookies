@@ -11,8 +11,7 @@ export async function GET(req) {
         const pathSegments = new URL(req.url).pathname.split('/').filter(Boolean);
         const start = pathSegments[pathSegments.length - 2]; 
         const end = pathSegments[pathSegments.length - 1];
-        console.log(start,end);
-        
+
         const { decoded } = auth;
         let userMobile = decoded.mobile;
 
@@ -71,8 +70,6 @@ export async function GET(req) {
         }
 
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500

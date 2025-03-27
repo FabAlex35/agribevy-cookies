@@ -52,7 +52,6 @@ export async function POST(req) {
         });
 
         const imagePath = uploadResponse.secure_url;
-// console.log(imagePath);
 
         const { decoded } = auth
         const marketerMobile = decoded.mobile

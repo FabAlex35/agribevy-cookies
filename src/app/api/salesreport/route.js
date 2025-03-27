@@ -72,8 +72,6 @@ export async function GET(req) {
         }
 
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500

@@ -18,7 +18,6 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true)
     const [chartData, setChartData] = useState(null)
     const [tableData, setTableData] = useState(null);
-console.log('rended');
 
     const router = useRouter()
     const user = useSelector((state) => state?.user?.userDetails)
@@ -79,8 +78,7 @@ console.log('rended');
 
     useEffect(() => {
         const role = Cookies.get('role');
-        console.log(role);
-
+  
         if (role) {
             getDashboardDetails();
             if (role === 'marketer' || role === 'assistant') {

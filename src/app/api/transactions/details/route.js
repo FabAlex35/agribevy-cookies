@@ -53,8 +53,6 @@ export async function GET(req) {
             }, { status: 403 });
         }
     } catch (error) {
-        console.log(error);
-
         return NextResponse.json({
             message: 'Server Error',
             status: 500
@@ -123,7 +121,6 @@ export async function PUT(req) {
             }, { status: 403 });
         }
     } catch (error) {
-        console.log(error);
         return NextResponse.json({
             message: 'Server Error',
             status: 500

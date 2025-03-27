@@ -89,8 +89,6 @@ const Accounts = () => {
         setLoading(true);
         const response = await getSalesReportAPI(selectedDate);
         if (response?.status === 200) {
-            console.log(response?.data?.sales);
-
             setSales(response?.data?.sales);
             setUserDetails(response?.data?.userData)
             setLoading(false);
