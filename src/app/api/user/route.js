@@ -92,34 +92,6 @@ export async function POST(req) {
                 status: 200
             }, { status: 200 })
 
-            const accessToken = await generateToken(data,subs)
-            const refreshToken = await generateRefreshToken(data)
-            const role = showRole(users);
-
-            response.headers.append('Set-Cookie', cookie.serialize('accessToken', accessToken, {
-                httpOnly: true,  
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 24 * 60 * 60,
-                path: '/',
-            }));
-
-            response.headers.append('Set-Cookie', cookie.serialize('refreshToken', refreshToken, {
-                httpOnly: true,  
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'strict',
-                maxAge: 24 * 60 * 60,
-                path: '/',
-            }));
-
-            response.headers.append('Set-Cookie', cookie.serialize('role', role, {
-                httpOnly: false,  
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'Strict', 
-                maxAge: 24 * 60 * 60, 
-                path: '/',
-            }));
-
             return response
         } else {
             return NextResponse.json({

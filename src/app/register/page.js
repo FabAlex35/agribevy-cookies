@@ -8,6 +8,9 @@ import { VscEye, VscEyeClosed } from "react-icons/vsc";
 import { registerUserAPI } from "@/src/Components/Api";
 import { useRouter } from "next/navigation";
 import Spinner from "@/src/Components/Spinner";
+import { IoClose } from "react-icons/io5";
+import { FaCircleCheck } from "react-icons/fa6";
+
 const libraries = ['places'];
 export default function Register() {
 
@@ -20,6 +23,7 @@ export default function Register() {
   const phonePattern = /^[0-9]{10}$/;
   const inputRef = useRef(null)
   const [errMsg, setErrMsg] = useState(null)
+  const [successMsg, setSuccessMsg] = useState(null)
   // const password = watch("password", "");
   const router = useRouter()
 
@@ -38,15 +42,12 @@ export default function Register() {
     const response = await registerUserAPI(payload)
     
     if (response?.status === 200) {
-      setLoading(false)
-      if (role === "marketer") {
-        router.push("/portal/settings")
-      }
-      else{
-        router.push("/portal/dashboard")
-      }
-
-      // router.push('/')
+      setSuccessMsg("Login after some time");
+      setTimeout(() => {
+        setSuccessMsg(null)
+          router.push('/')
+          setLoading(false)
+      }, 3000);
     }
     else if (response?.status === 409) {
       setLoading(false)
@@ -167,12 +168,6 @@ export default function Register() {
                   {role === "marketer" &&
                     <div className="form-group">
                       <label htmlFor="market">Market</label>
-                      {/* <input type="text" className="form-control" id="email" ref={(e)=>{
-                      inputRef.current=e;
-                      field.ref(e)
-                    }} {...register("market", {
-                      required: "Please enter the Market"
-                    })} /> */}
                       <Controller
                         name="market"
                         control={control}
@@ -238,6 +233,13 @@ export default function Register() {
         </div>
       </div>
 
+      <div className={successMsg === null ? "alert_net hide_net" : "alert_net show alert_suc_bg"}>
+          <FaCircleCheck className='exclamation-circle' />
+          <span className="msg">{successMsg}</span>
+          <div className="close-btn close_suc">
+            <IoClose className='close_mark' size={26} />
+          </div>
+      </div>
 
     </main>
   );

@@ -48,44 +48,6 @@ export async function middleware(req) {
 
     let decodedAccess = accessToken ? await verifyToken(accessToken, SECRET_KEY) : null;
     let decodedRefresh = refreshToken ? await verifyToken(refreshToken, REFRESH_SECRET_KEY) : null;
-    
-    if(!decodedAccess && !decodedRefresh){
-         if(url.pathname.startsWith("/portal")){
-            // return NextResponse.redirect(new URL("/", req.url));
-             const response = NextResponse.redirect(new URL("/", req.url))
-            
-                    // Append Set-Cookie header to clear the 'accessToken' cookie
-                    response.headers.append('Set-Cookie', cookie.serialize('accessToken', '', {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'Strict',
-                        expires: new Date(0),
-                        maxAge: 0 * 60,
-                        path: '/'
-                    }));
-            
-                    response.headers.append('Set-Cookie', cookie.serialize('refreshToken', '', {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'Strict',
-                        expires: new Date(0),
-                        maxAge: 0 * 60,
-                        path: '/'
-                    }));
-            
-                    response.headers.append('Set-Cookie', cookie.serialize('role', '', {
-                        httpOnly: false,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'Strict',
-                        expires: new Date(0),
-                        maxAge: 0 * 60,
-                        path: '/'
-                    }));
-            
-                    // Return the response
-                    return response;
-         }
-    }
 
     if(!decodedAccess){
         if(!decodedRefresh){
@@ -94,6 +56,9 @@ export async function middleware(req) {
             }
         }else{
             if (req.method != "GET" && url.pathname != "/api/auth/refresh") {
+                if(url.pathname == "/api/auth/logout"){
+                    return response
+                }
                 return NextResponse.json({ message: "Refersh" }, { status: 401 });
             }else if(url.pathname == "/"){
                 return NextResponse.redirect(new URL("/portal/dashboard", req.url))
