@@ -444,7 +444,7 @@ const FarmerDetails = ({ params }) => {
                                                                             />
                                                                         ) : (
                                                                             <span className={`badge payment-badge ${transaction?.farmer_status === "paid" ? 'bg-success' : 'bg-danger'}`}>
-                                                                                {transaction?.farmer_status === "paid" ? 'Paid' : 'Unpaid'}
+                                                                                {transaction?.farmer_status === "paid" ? 'Paid' : transaction?.farmer_amount === transaction?.farmer_payment ? "Unpaid" : "Partilly Paid"}
                                                                             </span>
                                                                         )}
                                                                         {/* Sold Date Status */}

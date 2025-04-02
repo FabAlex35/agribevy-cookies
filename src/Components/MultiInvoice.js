@@ -160,11 +160,11 @@ const MultiInvoice = ({ data, getInvoice, language }) => {
         if (data?.list?.every((v) => v.farmer_status === "paid")) {
             return "Paid"
         }
-        else if (data?.list?.every((v) => v.farmer_status === "pending")) {
+        else if (data?.list?.every((v) => v?.farmer_amount === v?.farmer_payment)) {
             return "Unpaid"
         }
         else {
-            return "Partly paid"
+            return "Partilly paid"
         }
     }
 
@@ -233,87 +233,6 @@ const MultiInvoice = ({ data, getInvoice, language }) => {
                             </th>
                         </tr>
                     </thead>
-                    {/* <tbody>
-                        {Object.values(
-                            data?.list?.reduce((acc, veg) => {                               
-                                if (!acc[veg.tamil_name]) {
-                                    acc[veg.tamil_name] = {
-                                        ...veg,
-                                        quantities: [],
-                                        price: [],
-                                        totalWeight: 0,
-                                        totalAmount: 0
-                                    };
-                                }
-                                acc[veg.tamil_name].quantities.push(veg.quantity);
-                                acc[veg.tamil_name].price.push(veg.amount/veg.quantity);
-                                acc[veg.tamil_name].totalWeight += veg.quantity;
-                                acc[veg.tamil_name].totalAmount += veg.amount;
-                                return acc;
-                            }, {})
-                        ).map((groupedVeg, index) => {
-                            return (
-                                <tr key={index}>
-                                    <td className="text-center">
-                                        {(groupedVeg.amount / groupedVeg.quantity).toFixed(2)}
-                                    </td>
-                                    <td>{language === "tamil" ? groupedVeg.tamil_name : groupedVeg.veg_name}</td>
-                                    <td className="text-center">
-                                        {groupedVeg.quantities.map((w, i) => (
-                                            <React.Fragment key={i}>
-                                                {w}
-                                                {i < groupedVeg.quantities.length - 1 && ","} 
-                                                {(i + 1) % 5 === 0 && <br />} 
-                                            </React.Fragment>
-                                        ))}
-                                    </td>
-                                    <td className="text-center">{groupedVeg.totalWeight.toFixed(2)}</td>
-                                    <td className="text-end">{groupedVeg.totalAmount.toFixed(2)}</td>
-                                </tr>
-                            )
-                        })}
-                    </tbody> */}
-                    {/* <tbody>
-    {Object.values(
-        data?.list?.reduce((acc, veg) => {                               
-            const key = `${veg.tamil_name}-${veg.amount / veg.quantity}`; 
-            if (!acc[key]) {
-                acc[key] = {
-                    ...veg,
-                    quantities: [],
-                    price: [],
-                    totalWeight: 0,
-                    totalAmount: 0
-                };
-            }
-            acc[key].quantities.push(veg.quantity);
-            acc[key].price.push(veg.amount / veg.quantity);
-            acc[key].totalWeight += veg.quantity;
-            acc[key].totalAmount += veg.amount;
-            return acc;
-        }, {})
-    ).map((groupedVeg, index) => {
-        return (
-            <tr key={index}>
-                <td className="text-center">
-                    {(groupedVeg.price[0]).toFixed(2)}
-                </td>
-                <td>{language === "tamil" ? groupedVeg.tamil_name : groupedVeg.veg_name}</td>
-                <td className="text-center">
-                    {groupedVeg.quantities.map((w, i) => (
-                        <React.Fragment key={i}>
-                            {w}
-                            {i < groupedVeg.quantities.length - 1 && ","} 
-                            {(i + 1) % 5 === 0 && <br />} 
-                        </React.Fragment>
-                    ))}
-                </td>
-                <td className="text-center">{groupedVeg.totalWeight.toFixed(2)}</td>
-                <td className="text-end">{groupedVeg.totalAmount.toFixed(2)}</td>
-            </tr>
-        )
-    })}
-</tbody> */}
                     <tbody>
                         {Object.values(
                             data?.list?.reduce((acc, veg) => {

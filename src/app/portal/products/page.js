@@ -278,7 +278,7 @@ const Products = () => {
                         <h5 className="modal-title">{translations[app_language]?.createShortcut}</h5>
                         <button type="button" className="btn-close" onClick={() => setShowShortcutModal(false)}></button>
                       </div>
-                      <div className="modal-body">
+                      <div className="modal-body veg_list_modal">
                         {tableData?.map((veg, index) => (
                           <div className="d-flex align-items-center mb-3" key={index}>
                             <label className="form-label me-2" style={{ minWidth: '150px', textAlign: 'right' }}>{language === "tamil" ? veg?.tamil_name : veg.veg_name}</label>

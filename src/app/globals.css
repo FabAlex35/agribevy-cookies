@@ -3333,6 +3333,10 @@ button.requirement-btn {
   overflow-y: scroll;
 }
 
+.veg_list_modal{
+  height: 500px;
+}
+
 .inpt-container {
   width: 50%;
 

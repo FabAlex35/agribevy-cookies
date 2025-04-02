@@ -197,7 +197,9 @@ const InvoiceBuyer = ({ data, closeModal,language }) => {
                         <div className="col-6 text-start">
                             <h5>
                                 {language==="tamil"?"கட்டண நிலை":"Payment Status"}:{" "}
-                                {data?.buyer_status === "paid" ? "Paid" : "Unpaid"}
+                                {data?.buyer_status === "paid" ? "Paid" 
+                                    : JSON.parse(data?.buyer_amount) === JSON.parse(data?.buyer_payment) ? "Unpaid" 
+                                    : "Partially Paid"}
                             </h5>
                         </div>
                         <div className="col-6 text-end">

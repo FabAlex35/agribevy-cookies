@@ -71,7 +71,7 @@ export async function GET(req) {
             }),
             querys({
                 query: `SELECT DISTINCT i.invoiceId, i.created_at, t.transaction_id, t.veg_name,
-                        t.quantity, t.f_amount as amount, t.farmer_status,p.vegetable_id, v.list_id, vl.tamil_name
+                        t.quantity, t.f_amount as amount, t.farmer_amount, t.farmer_payment, t.farmer_status, p.vegetable_id, v.list_id, vl.tamil_name
                         FROM invoice i
                         LEFT JOIN transactions t ON t.invoiceId = i.invoiceId
                         LEFT JOIN products p ON t.product_id = p.product_id 
@@ -125,10 +125,7 @@ export async function PUT(req) {
         const paymentAmount = parseInt(data.payment, 10);
 
         if (role !== 'marketer' && role !== 'assistant') {
-            return NextResponse.json({
-                message: 'Unauthorized',
-                status: 403
-            }, { status: 403 });
+            return NextResponse.json({ message: 'Unauthorized', status: 403 }, { status: 403 });
         }
 
         if (role === 'assistant') {
@@ -138,10 +135,7 @@ export async function PUT(req) {
             });
 
             if (!num) {
-                return NextResponse.json({
-                    message: 'User not found',
-                    status: 404
-                }, { status: 404 });
+                return NextResponse.json({ message: 'User not found', status: 404 }, { status: 404 });
             }
 
             marketerMobile = num.created_by;
@@ -154,10 +148,7 @@ export async function PUT(req) {
         });
 
         if (insertResult.affectedRows <= 0) {
-            return NextResponse.json({
-                message: 'Failed to insert payment record.',
-                status: 500
-            }, { status: 500 });
+            return NextResponse.json({ message: 'Failed to insert payment record.', status: 500 }, { status: 500 });
         }
 
         // Fetch transactions linked to the invoice ID
@@ -173,45 +164,37 @@ export async function PUT(req) {
             if (totalPaid >= paymentAmount) break;
 
             const transactionPayment = transaction.farmer_payment;
+            const transactionId = transaction.transaction_id; // Ensure it's handled properly
+
             if (transactionPayment <= (paymentAmount - totalPaid)) {
                 // Full payment for this transaction
-                updateQueries.push(`UPDATE transactions SET farmer_status = 'paid', farmer_payment = 0 WHERE transaction_id = ${transaction.transaction_id}`);
+                updateQueries.push(
+                    querys({
+                        query: `UPDATE transactions SET farmer_status = ?, farmer_payment = ? WHERE transaction_id = ?`,
+                        values: ['paid', 0, transactionId]
+                    })
+                );
                 totalPaid += transactionPayment;
             } else {
                 // Partial payment
                 const remainingAmount = transactionPayment - (paymentAmount - totalPaid);
-                updateQueries.push(`UPDATE transactions SET farmer_payment = ${remainingAmount}, farmer_status = 'pending' WHERE transaction_id = ${transaction.transaction_id}`);
+                updateQueries.push(
+                    querys({
+                        query: `UPDATE transactions SET farmer_payment = ?, farmer_status = ? WHERE transaction_id = ?`,
+                        values: [remainingAmount, 'pending', transactionId]
+                    })
+                );
                 totalPaid = paymentAmount;
             }
         }
 
-        // Execute all updates in one batch query
-        if (updateQueries.length > 0) {
-            await querys({ query: updateQueries.join("; ") });
-        }
+        // Execute all updates concurrently using Promise.all
+        await Promise.all(updateQueries);
 
-        return NextResponse.json({
-            message: 'Payment successful',
-            status: 200
-        }, { status: 200 });
+        return NextResponse.json({ message: 'Payment successful', status: 200 }, { status: 200 });
 
     } catch (error) {
         console.error('Error in PUT request:', error);
-
-        return NextResponse.json({
-            message: 'Server Error',
-            status: 500
-        }, { status: 500 });
+        return NextResponse.json({ message: 'Server Error', status: 500 }, { status: 500 });
     }
 }
-
-
-// ROUND(SUM(
-//     CASE 
-//         WHEN t.magamai_src = 'farmer' AND t.magamai_type = 'percentage' 
-//             THEN ((t.f_amount * COALESCE(t.commission, 0)) / 100) * t.magamai / 100  
-//         WHEN t.magamai_src = 'farmer' AND t.magamai_type = 'sack' 
-//             THEN t.magamai 
-//         ELSE 0 
-//     END
-// ), 2) AS total_magamai
